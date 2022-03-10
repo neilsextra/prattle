@@ -2239,33 +2239,6 @@ function open() {
 
     });
 
-    document.getElementById('window-minimize').addEventListener('click', (e) => {
- 
-        window.api.minimize();
-
-    });
-
-    document.getElementById('window-maximize').addEventListener('click', (e) => {
-        var isMaximized = window.api.isMaximized();
-
-        if (!isMaximized) {
-            document.getElementById('window-maximize').classList.add("fa-window-restore");
-            document.getElementById('window-maximize').classList.remove("fa-square");
-            window.api.maximize();
-        } else {
-            document.getElementById('window-maximize').classList.remove("fa-window-restore");
-            document.getElementById('window-maximize').classList.add("fa-square");
-            window.api.unmaximize();
-        }
-
-    });
-
-    document.getElementById('quit').addEventListener('click', async (e) => {
- 
-        window.api.quit();
-
-    });
-
 }
 </script>
 </head>
@@ -2337,9 +2310,14 @@ def main():
     WIDTH = 1300    
     HEIGHT = 840
 
-    cef.Initialize()
+    cef.Initialize({
+        'context_menu' : {
+            'enabled': False
+        }
+    })
     window_info = cef.WindowInfo()
     parent_handle = 0
+
     # This call has effect only on Mac and Linux.
     # All rect coordinates are applied including X and Y parameters.
     window_info.SetAsChild(parent_handle, [0, 0, WIDTH, HEIGHT])
