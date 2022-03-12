@@ -2244,10 +2244,10 @@ function open() {
 
             <div id="toolbar" style="position: absolute; top:0px; left:0px; right:0px; height:36px; -webkit-app-region: drag;">
                 <div style="position: absolute; top:-2px; left:0px; font-size:24px; padding-right:0px;">
-                    &#127849;
+                   &#x1F47B;
                 </div>
                 <div style="position: absolute; top:-8px; left:36px; padding-right:0px;">
-                    <h1>Donuts - CSV Viewer</h1>
+                    <h1>Prattle - CSV Viewer</h1>
                 </div>
 
                 <div style="position:absolute; top:2px; right:5px; width:35px; -webkit-app-region: no-drag;">
