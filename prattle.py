@@ -8,6 +8,9 @@ import sys
 import threading
 import ctypes
 import platform
+import csv
+from io import StringIO
+import json
 
 # HTML code. Browser will navigate to a Data uri created
 # from this html code.
@@ -419,7 +422,6 @@ HTML_code = """
 
 </style>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.2.0/papaparse.min.js"></script>
 <script>
 function FileUtil(document) {
 
@@ -2040,7 +2042,6 @@ var xOffset = 20;
 var yOffset = 16;
 
 var rows = [];
-var types = {};
 var columns = null;
 var detailsTableHeight = 0;
 var tableView = null;
@@ -2133,76 +2134,59 @@ function open() {
                     document.getElementById('placeholder').style.display = "none";
  
                     window.setTimeout(function() {
-                        let results = Papa.parse(reader.result);
-                        let lines = results.data;
-                        rows = [];
-                        types = {};
-                        columns = null;
-                        loop: for (var line in lines) {
 
-                            if (!columns) {
-                                columns = lines[line];
-                            } else {
+                        function process_result(value) {
+                             process_file(value, result_callback);
+                        }
 
-                                for (var iColumn = 0; iColumn < lines[line].length; iColumn++) {
+                        function result_callback(value) {
+                            let results = JSON.parse(value);
 
-                                    if (!(columns[iColumn] in types)) {
-                                        types[columns[iColumn]] = 'numeric';
-                                    }
+                            rows = results.rows;
+                            columns = results.columns;
+  
+                            document.getElementById('details').innerHTML = "";
 
-                                    if (((lines[line][iColumn]) != '') && (isNumeric(lines[line][iColumn]))) {
-                                        types[columns[iColumn]] = 'string';
-                                    }
+                            let widths = [];
 
-                                }
+                            for (var iColumn in columns) {
 
-                                if (lines[line].length == columns.length) {
-                                    rows.push(lines[line]);
-                                }
+                                widths.push(300);
 
                             }
 
+                            let node = document.getElementById('table');
+                            while (node.hasChildNodes()) {
+                                node.removeChild(node.lastChild);
+                            }
+
+                            let dataview = new DataView(columns, rows);
+                            let painter = new Painter();
+
+                            tableView = new TableView({
+                                "container": "#table",
+                                "model": dataview,
+                                "nbRows": dataview.Length,
+                                "rowHeight": 20,
+                                "headerHeight": 20,
+                                "painter": painter,
+                                "columnWidths": widths
+                            });
+
+                            tableView.addProcessor(function(row) {
+                            display(row);
+                            })
+
+                            document.getElementById('table').style.display = "inline-block";
+
+                            window.setTimeout(function() {
+                                document.getElementById('waitDialog').style.display = "none";
+                                tableView.setup();
+                                tableView.resize();
+                            }, 10);
                         }
 
-                        document.getElementById('details').innerHTML = "";
-
-                        let widths = [];
-
-                        for (var iColumn in columns) {
-
-                            widths.push(300);
-
-                        }
-
-                        let node = document.getElementById('table');
-                        while (node.hasChildNodes()) {
-                            node.removeChild(node.lastChild);
-                        }
-
-                        let dataview = new DataView(columns, rows);
-                        let painter = new Painter();
-
-                        tableView = new TableView({
-                            "container": "#table",
-                            "model": dataview,
-                            "nbRows": dataview.Length,
-                            "rowHeight": 20,
-                            "headerHeight": 20,
-                            "painter": painter,
-                            "columnWidths": widths
-                        });
-
-                        tableView.addProcessor(function(row) {
-                           display(row);
-                        })
-
-                        document.getElementById('table').style.display = "inline-block";
-
-                        window.setTimeout(function() {
-                            document.getElementById('waitDialog').style.display = "none";
-                            tableView.setup();
-                            tableView.resize();
-                        }, 10);
+                        process_result(reader.result);
 
                     }, 100);
 
@@ -2291,15 +2275,9 @@ function open() {
 """
 
 def js_print(browser, lang, event, msg):
-    # Execute Javascript function "js_print"
     browser.ExecuteFunction("js_print", lang, event, msg)
 
 def html_to_data_uri(html):
-    # This function is called in two ways:
-    # 1. From Python: in this case value is returned
-    # 2. From Javascript: in this case value cannot be returned because
-    #    inter-process messaging is asynchronous, so must return value
-    #    by calling js_callback.
     html = html.encode("utf-8", "replace")
     b64 = base64.b64encode(html).decode("utf-8", "replace")
     ret = "data:text/html;base64,{data}".format(data=b64)
@@ -2315,11 +2293,10 @@ def main():
             'enabled': False
         }
     })
+    
     window_info = cef.WindowInfo()
     parent_handle = 0
 
-    # This call has effect only on Mac and Linux.
-    # All rect coordinates are applied including X and Y parameters.
     window_info.SetAsChild(parent_handle, [0, 0, WIDTH, HEIGHT])
     browser = cef.CreateBrowserSync(url=html_to_data_uri(HTML_code),
                                     window_info=window_info,
@@ -2327,15 +2304,38 @@ def main():
     if platform.system() == "Windows":
         window_handle = browser.GetOuterWindowHandle()
         insert_after_handle = 0
-        # X and Y parameters are ignored by setting the SWP_NOMOVE flag
         SWP_NOMOVE = 0x0002
-        # noinspection PyUnresolvedReferences
         ctypes.windll.user32.SetWindowPos(window_handle, insert_after_handle,
                                           0, 0, WIDTH, HEIGHT, SWP_NOMOVE)
 
+    bindings = cef.JavascriptBindings()
+    bindings.SetFunction("process_file", process_file)
+
+    browser.SetJavascriptBindings(bindings)
     cef.MessageLoop()
     del browser
     cef.Shutdown()
+
+def process_file(value, js_callback):    
+    f = StringIO(value)
+    reader = csv.reader(f, delimiter=',')
+
+    columns = None
+    rows = []
+
+
+    for row in reader:
+        if columns == None:
+            columns = row
+        else:
+            rows.append(row)
+ 
+    output = {
+        'columns' : columns,
+        'rows' : rows
+    }
+
+    js_callback.Call(json.dumps(output))
 
 if __name__ == '__main__':
     main()
