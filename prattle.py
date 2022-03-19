@@ -11,6 +11,12 @@ import platform
 import csv
 from io import StringIO
 import json
+import pandas
+import numbers
+import matplotlib.pyplot as plt
+import numpy as np
+import base64
+import io 
 
 # HTML code. Browser will navigate to a Data uri created
 # from this html code.
@@ -420,6 +426,39 @@ HTML_code = """
     color: #888;
 }
 
+.graph-button {
+    background-color: white;
+    color: black;
+    border: 2px solid #e7e7e7;
+    color: white;
+    padding: 16px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    transition-duration: 0.4s;
+    cursor: pointer;
+}
+
+.graph-button:hover {
+  background-color: #555555;
+  color: white;
+}
+</style>
+
+<style>
+.checkbox {
+    display: block;
+    position: relative;
+    padding-left: 25;
+    margin-bottom: 12px;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 </style>
 
 <script>
@@ -1123,7 +1162,6 @@ FileUtil.prototype.load = function (callback) {
                 this.maxScrollHorizontal = 0;
             }
 
-
             if (this.height > this.verticalScrollbar.clientHeight) {
                 this.maxScrollVertical = this.height - this.verticalScrollbar.clientHeight;
             } else {
@@ -1360,9 +1398,7 @@ FileUtil.prototype.load = function (callback) {
             this.eventRegister.bind(window, 'resize', (function(__this) {
 
                 return function(event) {
-
-                    __this.resize();
-
+                     __this.resize();
                 };
 
             })(this));
@@ -2035,9 +2071,6 @@ FileUtil.prototype.load = function (callback) {
     }
 </script>
 <script>
-var splitter = undefined;
-var bigTable = undefined;
-
 var xOffset = 20;
 var yOffset = 16;
 
@@ -2048,12 +2081,14 @@ var tableView = null;
 
 class DataView extends SyncTableModel {
 
-    constructor(columns, data) {
+    constructor(columns, data, types) {
         super();
 
         this.__columns = columns;
         this.__data = data;
         this.__records = data.length;
+        this.__types = types;
+        
     }
 
     get Length() {
@@ -2078,6 +2113,17 @@ class DataView extends SyncTableModel {
 
     }
 
+    toJSON() {
+        let json = {
+            columns : this.__columns,
+            data: this.__data,
+            types: this.__types
+        }
+
+        return JSON.stringify(json);
+
+    }
+
 }
 
 function resize() {}
@@ -2094,13 +2140,6 @@ function open() {
             let reader = new FileReader();
 
             reader.onload = (e) => {
-
-                    function isNumeric(obj) {
-                        var realStringObj = obj && obj.toString();
-
-                        return !Array.isArray(obj) && (realStringObj - parseFloat(realStringObj) + 1) >= 0;
-
-                    }
 
                     function display(row) {
                         var position = parseInt(row) + 1;
@@ -2136,14 +2175,37 @@ function open() {
                     window.setTimeout(function() {
 
                         function process_result(value) {
-                             process_file(value, result_callback);
+                            process_file(value, result_callback);
                         }
 
+                        function process_plot(dataview) {
+                            show_plot(dataview.toJSON(), plot_callback);
+                        }
+
+                        function plot_callback(value) {
+
+                            console.log(value);
+
+                            document.getElementById('table').style.display = "inline-block";
+
+                            document.getElementById('plots').innerHTML = `<div style="position:absolute; width:100%; hieght:100%; overflow:auto;">`;
+                            document.getElementById('plots').innerHTML += `<img src="data:image/png;base64,${value}"></img>`;
+                            document.getElementById('plots').innerHTML += `</div>`;
+ 
+                            window.setTimeout(function() {
+                                document.getElementById('waitDialog').style.display = "none";
+                                tableView.setup();
+                                tableView.resize();
+                            }, 10);
+
+                        }
+ 
                         function result_callback(value) {
                             let results = JSON.parse(value);
 
                             rows = results.rows;
                             columns = results.columns;
+                            types = results.types;
   
                             document.getElementById('details').innerHTML = "";
 
@@ -2160,7 +2222,7 @@ function open() {
                                 node.removeChild(node.lastChild);
                             }
 
-                            let dataview = new DataView(columns, rows);
+                            dataview = new DataView(columns, rows, types);
                             let painter = new Painter();
 
                             tableView = new TableView({
@@ -2174,16 +2236,11 @@ function open() {
                             });
 
                             tableView.addProcessor(function(row) {
-                            display(row);
+                                display(row);
                             })
 
-                            document.getElementById('table').style.display = "inline-block";
+                            process_plot(dataview);
 
-                            window.setTimeout(function() {
-                                document.getElementById('waitDialog').style.display = "none";
-                                tableView.setup();
-                                tableView.resize();
-                            }, 10);
                         }
 
                         process_result(reader.result);
@@ -2223,6 +2280,31 @@ function open() {
 
     });
 
+    document.getElementById('listview').addEventListener('click', (e) => {
+
+ 
+        document.getElementById('listview').style.color = "rgba(0,0,0,1.0)";
+        document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
+
+        document.getElementById('details').style.display = "inline-block";
+        document.getElementById('plots').style.display = "none";
+
+        return false;
+
+    });
+
+    document.getElementById('boxplotview').addEventListener('click', (e) => {
+
+        document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
+
+        document.getElementById('details').style.display = "none";
+        document.getElementById('plots').style.display = "inline-block";
+
+        return false;
+
+    });
+
 }
 </script>
 </head>
@@ -2242,7 +2324,7 @@ function open() {
     <div style="overflow:hidden; user-select: none;">
         <div style="overflow:hidden;">
 
-            <div id="toolbar" style="position: absolute; top:0px; left:0px; right:0px; height:36px; -webkit-app-region: drag;">
+            <div id="toolbar" style="position: absolute; top:0px; left:0px; right:0px; height:36px;">
                 <div style="position: absolute; top:-2px; left:0px; font-size:24px; padding-right:0px;">
                    &#x1F47B;
                 </div>
@@ -2250,24 +2332,38 @@ function open() {
                     <h1>Prattle - CSV Viewer</h1>
                 </div>
 
-                <div style="position:absolute; top:2px; right:5px; width:35px; -webkit-app-region: no-drag;">
-                    <a id="open" style="position:absolute; font-size:18px; left:6px; -webkit-app-region: no-drag;" class="menu-item">&#x1F575;</a>
+                <div style="position:absolute; top:2px; right:2px; width:35px;">
+                    <a id="open" style="position:absolute; font-size:18px; left:6px;" class="menu-item">&#x1F575;</a>
                 </div>
 
             </div>
 
             <div id="container" style="position:absolute; top:32px; left:10px; right:295px; bottom:10px; border: 1px solid rgba(0,0,0, 0.2); overflow:hidden;">
                 <div id="placeholder" style="position:absolute; display:inline-block; top:10px; left:10px; right:10px; bottom:10px">
-                    <div id="upload" class="menu-item" style="color: rgba(0,0,0,0.1); margin-left:45%; margin-top:30%; font-size:128px;">
+                    <div id="upload" class="menu-item" style="color: rgba(0,0,0,0.1); margin-left:45%; margin-top:20%; font-size:128px;">
                         &#x1F575;
                     </div>
                 </div>
                 <div id="table" style="position:absolute; display:none; left:2px; top:2px; bottom:2px; right:2px; overflow:none;">
                 </div>
+                </div>
             </div>
-            <div id="details" class="details" style="position:absolute; top:32px; right:10px; width:280px; bottom: 10px; border: 1px solid rgba(0,0,0, 0.2); overflow:hidden;">
-            </div>
-</body>
+            <div style="position:absolute; top:32px; right:10px; width:280px; bottom: 10px; border: 1px solid rgba(0,0,0, 0.2); ">
+                <div id="details" class="details" style="position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
+                </div>
+                <div id="plots" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
+                </div>
+  
+                <div id="selection" style="position: absolute; bottom:20px; height:12px; width:100%; overflow:hide; border-bottom: 1px solid rgba(0,0,0, 0.05); opacity:0.8;">
+                    <div id="views" style="display: block; font-size:32px; width:40px; height:10px; overflow:hide; margin-left:auto; margin-right:auto; margin-top:4px;">
+                        <a id="listview" class="menu-item" style="color:rgba(0,0,0,1.0)">&#8226;</a>
+                        <a id="boxplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
+                    </div>
+                </div>
+            </div>    
+
+        </div>    
+    </body>
 
 </html>
 
@@ -2282,7 +2378,33 @@ def html_to_data_uri(html):
     b64 = base64.b64encode(html).decode("utf-8", "replace")
     ret = "data:text/html;base64,{data}".format(data=b64)
     return ret
-        
+
+def scatter_plot(data, x_axis, y_axis):
+    x = []
+    y = []
+    s = []
+
+    for i in range(len(data)):
+        x.append(float(data[i][x_axis]))
+        y.append(float(data[i][y_axis]))
+        s.append(4)
+         
+    fig, ax = plt.subplots()
+    fig.set_figwidth(3)
+    fig.set_figheight(3)
+
+    ax.scatter(x, y, s=s)
+    
+    pic_IObytes = io.BytesIO()
+    plt.savefig(pic_IObytes, format='png')
+    plt.close()
+
+    pic_IObytes.seek(0)
+    pic_b64 = base64.b64encode(pic_IObytes.read())   
+
+    return pic_b64.decode('utf-8')
+
+
 def main():
 
     WIDTH = 1300    
@@ -2290,26 +2412,20 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': False
+            'enabled': True
         }
     })
     
     window_info = cef.WindowInfo()
     parent_handle = 0
 
-    window_info.SetAsChild(parent_handle, [0, 0, WIDTH, HEIGHT])
     browser = cef.CreateBrowserSync(url=html_to_data_uri(HTML_code),
                                     window_info=window_info,
                                     window_title="Prattle")
-    if platform.system() == "Windows":
-        window_handle = browser.GetOuterWindowHandle()
-        insert_after_handle = 0
-        SWP_NOMOVE = 0x0002
-        ctypes.windll.user32.SetWindowPos(window_handle, insert_after_handle,
-                                          0, 0, WIDTH, HEIGHT, SWP_NOMOVE)
 
     bindings = cef.JavascriptBindings()
     bindings.SetFunction("process_file", process_file)
+    bindings.SetFunction("show_plot", show_plot)
 
     browser.SetJavascriptBindings(bindings)
     cef.MessageLoop()
@@ -2322,20 +2438,42 @@ def process_file(value, js_callback):
 
     columns = None
     rows = []
-
+    types = []
 
     for row in reader:
         if columns == None:
             columns = row
+
+            for column in columns:
+                types.append("number")
+
         else:
             rows.append(row)
- 
+            
+            column = 0
+
+            for cell in row:
+                if len(cell) != 0:
+                    if cell.isnumeric() or cell.replace('.', '', 1).isnumeric() : 
+                        if  types[column] != "string":
+                            types[column] = "number"
+                    else:
+                        types[column] = "string"
+
+                column = column + 1        
+
     output = {
         'columns' : columns,
+        'types' : types,
         'rows' : rows
     }
 
     js_callback.Call(json.dumps(output))
+
+def show_plot(value, js_callback):  
+    data = json.loads(value);
+
+    return js_callback.Call(scatter_plot(data['data'], 0, 1))
 
 if __name__ == '__main__':
     main()
