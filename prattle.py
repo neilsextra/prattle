@@ -426,25 +426,42 @@ HTML_code = """
     color: #888;
 }
 
-.graph-button {
-    background-color: white;
-    color: black;
-    border: 2px solid #e7e7e7;
-    color: white;
-    padding: 16px 32px;
-    text-align: center;
-    text-decoration: none;
-    display: inline-block;
-    font-size: 16px;
-    margin: 4px 2px;
-    transition-duration: 0.4s;
-    cursor: pointer;
+.graph-container {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    width: 100%;
+    height: 100%;
+    justify-content: left;
+    box-sizing: border-box;
 }
 
-.graph-button:hover {
-  background-color: #555555;
-  color: white;
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
 }
+
+::-webkit-scrollbar-track {
+    -webkit-border-radius: 4px;
+    background: rgba(240, 240, 240, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    -webkit-border-radius: 4px;
+    border: 1px solid rgb(134, 134, 134);
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+::-webkit-scrollbar-thumb:window-inactive {
+    background: rgba(0, 0, 0, 0.05);
+}
+
 </style>
 
 <style>
@@ -2183,14 +2200,21 @@ function open() {
                         }
 
                         function plot_callback(value) {
-
-                            console.log(value);
+                            let plots = JSON.parse(value);
 
                             document.getElementById('table').style.display = "inline-block";
 
-                            document.getElementById('plots').innerHTML = `<div style="position:absolute; width:100%; hieght:100%; overflow:auto;">`;
-                            document.getElementById('plots').innerHTML += `<img src="data:image/png;base64,${value}"></img>`;
-                            document.getElementById('plots').innerHTML += `</div>`;
+                            var html = `<div class="graph-container" style="position:absolute; width:100%; hieght:100%; overflow:auto;">`;
+
+                            for (var plot in plots) {
+                                html += `<div style="margin-left:20px">`;
+                                html += `<img src="data:image/png;base64,${plots[plot]['plot']}"></img>`;
+                                html += `</div>`;
+                            }
+
+                            html += `</div>`;
+
+                            document.getElementById('plots').innerHTML = html;
  
                             window.setTimeout(function() {
                                 document.getElementById('waitDialog').style.display = "none";
@@ -2338,7 +2362,7 @@ function open() {
 
             </div>
 
-            <div id="container" style="position:absolute; top:32px; left:10px; right:295px; bottom:10px; border: 1px solid rgba(0,0,0, 0.2); overflow:hidden;">
+            <div id="container" style="position:absolute; top:32px; left:10px; right:340px; bottom:10px; border: 1px solid rgba(0,0,0, 0.2); overflow:hidden;">
                 <div id="placeholder" style="position:absolute; display:inline-block; top:10px; left:10px; right:10px; bottom:10px">
                     <div id="upload" class="menu-item" style="color: rgba(0,0,0,0.1); margin-left:45%; margin-top:20%; font-size:128px;">
                         &#x1F575;
@@ -2348,7 +2372,7 @@ function open() {
                 </div>
                 </div>
             </div>
-            <div style="position:absolute; top:32px; right:10px; width:280px; bottom: 10px; border: 1px solid rgba(0,0,0, 0.2); ">
+            <div style="position:absolute; top:32px; right:10px; width:325px; bottom: 10px; border: 1px solid rgba(0,0,0, 0.2); ">
                 <div id="details" class="details" style="position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
                 </div>
                 <div id="plots" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
@@ -2379,19 +2403,27 @@ def html_to_data_uri(html):
     ret = "data:text/html;base64,{data}".format(data=b64)
     return ret
 
-def scatter_plot(data, x_axis, y_axis):
+def scatter_plot(data, labels, x_axis, y_axis):
     x = []
     y = []
     s = []
 
+    plt.rc('font', size=6)
+
     for i in range(len(data)):
-        x.append(float(data[i][x_axis]))
-        y.append(float(data[i][y_axis]))
-        s.append(4)
-         
+
+        if len(data[i][x_axis]) > 0 and len(data[i][y_axis]) > 0:
+            x.append(float(data[i][x_axis]))
+            y.append(float(data[i][y_axis]))
+            s.append(4)
+            
     fig, ax = plt.subplots()
+
+    ax.set_xlabel(labels[x_axis])
+    ax.set_ylabel(labels[y_axis])
+    ax.yaxis.set_label_position("right")
     fig.set_figwidth(3)
-    fig.set_figheight(3)
+    fig.set_figheight(3)  
 
     ax.scatter(x, y, s=s)
     
@@ -2403,7 +2435,6 @@ def scatter_plot(data, x_axis, y_axis):
     pic_b64 = base64.b64encode(pic_IObytes.read())   
 
     return pic_b64.decode('utf-8')
-
 
 def main():
 
@@ -2471,9 +2502,33 @@ def process_file(value, js_callback):
     js_callback.Call(json.dumps(output))
 
 def show_plot(value, js_callback):  
-    data = json.loads(value);
+    plots = []
+    continuous = []
 
-    return js_callback.Call(scatter_plot(data['data'], 0, 1))
+    data = json.loads(value)
+    types = data['types']
+
+    print(types)
+
+    column = 0
+
+    for datatype in types:
+        if datatype == 'number':
+            continuous.append(column)
+    
+        column = column + 1
+
+    while len(continuous) > 1:
+        x_axis = continuous.pop(0)
+
+        for y_axis in continuous: 
+                plots.append({
+                        'x': data['types'][x_axis],
+                        'y': data['types'][y_axis],
+                        'plot': scatter_plot(data['data'], data['columns'], x_axis, y_axis)
+                        })
+    
+    return js_callback.Call(json.dumps(plots))
 
 if __name__ == '__main__':
     main()
