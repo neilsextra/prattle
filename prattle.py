@@ -2093,6 +2093,9 @@ var yOffset = 16;
 
 var rows = [];
 var columns = null;
+var categorical = [];
+var continuous = [];
+
 var detailsTableHeight = 0;
 var tableView = null;
 
@@ -2159,27 +2162,46 @@ function open() {
             reader.onload = (e) => {
 
                     function display(row) {
+                        function summary(heading, columns, variables, row) {
+                            var html = "";
+
+                            if (variables.length > 0) {
+                                html += `<fieldset style="margin-top:5px;"><legend>${heading}</legend>`;
+                                html += `<table style="margin:0px;">`;
+                
+                                for (var variable in variables) {
+                                    html += `<tr><td><label ` +
+                                            `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
+                                            `${columns[variables[variable]]}</label></td><td>${row[variables[variable]]}</td></tr>`;
+                                }
+                
+                                html += `</table>`;
+                                html += `</fieldset>`;
+
+                            }
+
+                            return html;
+
+                        }
+
                         var position = parseInt(row) + 1;
                     
-                        var html = `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
-                            `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">Row: ${position}</label></div>`;
-                    
+                        let html = "";
+
+                        html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+                        `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                        `Row: ${position}</label></div>`;
+                
                         html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
-                    
-                        html += `<div style="position:absolute; margin-top:10px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
-                            `<label style="width:100%; line-height:20px; font-size:12px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; margin-left:5px;` +
-                            `display:inline-block;">` +
-                            `Values</label>` +
-                            `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:25px; ">` +
-                            `<table id="details-table" style="margin-left:10px;">`;
-                    
-                        for (var iColumn = 0; iColumn < columns.length; iColumn++) {
-                            html += `<tr><td><label style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
-                                `${columns[iColumn]}</label></td><td>${rows[row][iColumn]}</td></tr>`;
-                        }
-                    
-                        html += `</table></div></div>`;
-                    
+
+                        html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
+                                `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
+
+                        html += summary("Categorical", columns, categorical, rows[row]);
+                        html += summary("Continuous", columns, continuous, rows[row]);
+
+                        html += `</div></div>`;
+            
                         document.getElementById('details').innerHTML = html;
                     
                         return false;
@@ -2225,6 +2247,28 @@ function open() {
                         }
  
                         function result_callback(value) {
+                            function summary(heading, columns, variables, rows) {
+                                var html = "";
+
+                                if (variables.length > 0) {
+                                    html += `<fieldset style="margin-top:5px;"><legend>${heading}</legend>`;
+                                    html += `<table style="margin:0px;">`;
+                    
+                                    for (var variable in variables) {
+                                        html += `<tr><td><label ` +
+                                                `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
+                                                `${columns[variables[variable]]}</label></td><td>${(rows.length > 0) ? rows[0][variables[variable]] : '&#x2756;'}</td></tr>`;
+                                    }
+                    
+                                    html += `</table>`;
+                                    html += `</fieldset>`;
+
+                                }
+
+                                return html;
+
+                            }
+
                             let results = JSON.parse(value);
 
                             rows = results.rows;
@@ -2236,9 +2280,7 @@ function open() {
                             let widths = [];
 
                             for (var iColumn in columns) {
-
                                 widths.push(300);
-
                             }
 
                             let node = document.getElementById('table');
@@ -2262,6 +2304,36 @@ function open() {
                             tableView.addProcessor(function(row) {
                                 display(row);
                             })
+
+                            continuous = [];
+                            categorical = [];
+
+                            for (var datatype in types) {
+
+                                if (types[datatype] == 'string') {
+                                    categorical.push(datatype); 
+                                } else {
+                                    continuous.push(datatype); 
+                                }
+                            }
+
+                            let html = "";
+
+                            html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+                            `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                            `Row: ${(results.rows.length > 0) ? '1' : '&#x2756;'} </label></div>`;
+                    
+                            html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
+
+                            html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
+                                    `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
+
+                            html += summary("Categorical", columns, categorical, results.rows);
+                            html += summary("Continuous", columns, continuous, results.rows);
+
+                            html += `</div></div>`;
+                
+                            document.getElementById('details').innerHTML = html;
 
                             process_plot(dataview);
 
@@ -2443,7 +2515,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': True
+            'enabled': False
         }
     })
     
@@ -2507,8 +2579,6 @@ def show_plot(value, js_callback):
 
     data = json.loads(value)
     types = data['types']
-
-    print(types)
 
     column = 0
 
