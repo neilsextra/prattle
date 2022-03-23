@@ -2172,7 +2172,7 @@ function open() {
                                 for (var variable in variables) {
                                     html += `<tr><td><label ` +
                                             `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
-                                            `${columns[variables[variable]]}</label></td><td>${row[variables[variable]]}</td></tr>`;
+                                            `${columns[variables[variable]]}</label></td><td>${row == null ? '-' : row[variables[variable]]}</td></tr>`;
                                 }
                 
                                 html += `</table>`;
@@ -2184,7 +2184,7 @@ function open() {
 
                         }
 
-                        var position = parseInt(row) + 1;
+                        var position = row == null ? '&#x2756;' : parseInt(row) + 1;
                     
                         let html = "";
 
@@ -2197,8 +2197,8 @@ function open() {
                         html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
                                 `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
 
-                        html += summary("Categorical", columns, categorical, rows[row]);
-                        html += summary("Continuous", columns, continuous, rows[row]);
+                        html += summary("Categorical", columns, categorical, row == null ? null : rows[row]);
+                        html += summary("Continuous", columns, continuous, row == null  ? null : rows[row]);
 
                         html += `</div></div>`;
             
@@ -2247,28 +2247,6 @@ function open() {
                         }
  
                         function result_callback(value) {
-                            function summary(heading, columns, variables, rows) {
-                                var html = "";
-
-                                if (variables.length > 0) {
-                                    html += `<fieldset style="margin-top:5px;"><legend>${heading}</legend>`;
-                                    html += `<table style="margin:0px;">`;
-                    
-                                    for (var variable in variables) {
-                                        html += `<tr><td><label ` +
-                                                `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
-                                                `${columns[variables[variable]]}</label></td><td>${(rows.length > 0) ? rows[0][variables[variable]] : '&#x2756;'}</td></tr>`;
-                                    }
-                    
-                                    html += `</table>`;
-                                    html += `</fieldset>`;
-
-                                }
-
-                                return html;
-
-                            }
-
                             let results = JSON.parse(value);
 
                             rows = results.rows;
@@ -2317,23 +2295,7 @@ function open() {
                                 }
                             }
 
-                            let html = "";
-
-                            html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
-                            `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
-                            `Row: ${(results.rows.length > 0) ? '1' : '&#x2756;'} </label></div>`;
-                    
-                            html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
-
-                            html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
-                                    `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
-
-                            html += summary("Categorical", columns, categorical, results.rows);
-                            html += summary("Continuous", columns, continuous, results.rows);
-
-                            html += `</div></div>`;
-                
-                            document.getElementById('details').innerHTML = html;
+                            display(rows.length == 0 ? null : 0)
 
                             process_plot(dataview);
 
@@ -2515,7 +2477,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': False
+            'enabled': True
         }
     })
     
