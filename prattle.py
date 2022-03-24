@@ -14,6 +14,7 @@ import json
 import pandas
 import numbers
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
 import base64
 import io 
@@ -2095,6 +2096,8 @@ var rows = [];
 var columns = null;
 var categorical = [];
 var continuous = [];
+var currentRow = 0;
+var currentView = 0;
 
 var detailsTableHeight = 0;
 var tableView = null;
@@ -2140,13 +2143,99 @@ class DataView extends SyncTableModel {
             types: this.__types
         }
 
-        return JSON.stringify(json);
+        return json;
 
     }
 
 }
 
 function resize() {}
+
+function plot()
+{
+    function process_plot(dataview) {
+        let json = dataview.toJSON();
+
+        json['row'] = currentRow;
+
+        show_plot(JSON.stringify(json), plot_callback);
+    }
+    
+    function plot_callback(value) {
+        let plots = JSON.parse(value);
+
+        var html = `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+                    `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                    `Row: ${parseInt(currentRow) + 1}</label></div>`;
+            
+        html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
+        html +=  `<div style="position:absolute; width:100%; top:50px; bottom:0px;">`;
+
+        html += `<div class="graph-container" style="position:absolute; overflow:auto;">`;
+
+        for (var plot in plots) {
+            html += `<div style="margin-left:20px">`;
+            html += `<img src="data:image/png;base64,${plots[plot]['plot']}"></img>`;
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+
+        document.getElementById('plots').innerHTML = html;
+
+        document.getElementById('waitDialog').style.display = "none";
+
+    }
+
+    process_plot(dataview);
+
+}
+
+function details() {
+    function summary(heading, columns, variables, row) {
+        var html = "";
+
+        if (variables.length > 0) {
+            html += `<fieldset style="margin-top:5px;"><legend>${heading}</legend>`;
+            html += `<table style="margin:0px;">`;
+
+            for (var variable in variables) {
+                html += `<tr><td><label` +
+                        `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
+                        `${columns[variables[variable]]}</label></td><td>${row == null ? '-' : row[variables[variable]]}</td></tr>`;
+            }
+
+            html += `</table>`;
+            html += `</fieldset>`;
+
+        }
+
+        return html;
+
+    }
+
+    var position = currentRow == null ? '&#x2756;' : parseInt(currentRow) + 1;
+
+    let html = "";
+
+    html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+    `<label id="row" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+    `Row: ${position}</label></div>`;
+
+    html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
+
+    html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
+            `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
+
+    html += summary("Categorical", columns, categorical, currentRow == null ? null : rows[currentRow]);
+    html += summary("Continuous", columns, continuous, currentRow == null  ? null : rows[currentRow]);
+
+    html += `</div></div>`;
+
+    document.getElementById('details').innerHTML = html;
+
+}
 
 function open() {
          
@@ -2161,53 +2250,6 @@ function open() {
 
             reader.onload = (e) => {
 
-                    function display(row) {
-                        function summary(heading, columns, variables, row) {
-                            var html = "";
-
-                            if (variables.length > 0) {
-                                html += `<fieldset style="margin-top:5px;"><legend>${heading}</legend>`;
-                                html += `<table style="margin:0px;">`;
-                
-                                for (var variable in variables) {
-                                    html += `<tr><td><label ` +
-                                            `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
-                                            `${columns[variables[variable]]}</label></td><td>${row == null ? '-' : row[variables[variable]]}</td></tr>`;
-                                }
-                
-                                html += `</table>`;
-                                html += `</fieldset>`;
-
-                            }
-
-                            return html;
-
-                        }
-
-                        var position = row == null ? '&#x2756;' : parseInt(row) + 1;
-                    
-                        let html = "";
-
-                        html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
-                        `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
-                        `Row: ${position}</label></div>`;
-                
-                        html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
-
-                        html += `<div style="position:absolute; margin-top:0px; left:0px; right:0px; top:50px; bottom:0px; style="overflow:hidden;">` +
-                                `<div id="details-container" class="container" style="overflow-y: auto; overflow-x: auto; position:absolute; width:100%; bottom:5px; top:0px;">`;
-
-                        html += summary("Categorical", columns, categorical, row == null ? null : rows[row]);
-                        html += summary("Continuous", columns, continuous, row == null  ? null : rows[row]);
-
-                        html += `</div></div>`;
-            
-                        document.getElementById('details').innerHTML = html;
-                    
-                        return false;
-                    
-                    }
-
                     document.getElementById('waitDialog').style.display = "inline-block";
                     document.getElementById('placeholder').style.display = "none";
  
@@ -2217,35 +2259,6 @@ function open() {
                             process_file(value, result_callback);
                         }
 
-                        function process_plot(dataview) {
-                            show_plot(dataview.toJSON(), plot_callback);
-                        }
-
-                        function plot_callback(value) {
-                            let plots = JSON.parse(value);
-
-                            document.getElementById('table').style.display = "inline-block";
-
-                            var html = `<div class="graph-container" style="position:absolute; width:100%; hieght:100%; overflow:auto;">`;
-
-                            for (var plot in plots) {
-                                html += `<div style="margin-left:20px">`;
-                                html += `<img src="data:image/png;base64,${plots[plot]['plot']}"></img>`;
-                                html += `</div>`;
-                            }
-
-                            html += `</div>`;
-
-                            document.getElementById('plots').innerHTML = html;
- 
-                            window.setTimeout(function() {
-                                document.getElementById('waitDialog').style.display = "none";
-                                tableView.setup();
-                                tableView.resize();
-                            }, 10);
-
-                        }
- 
                         function result_callback(value) {
                             let results = JSON.parse(value);
 
@@ -2280,7 +2293,19 @@ function open() {
                             });
 
                             tableView.addProcessor(function(row) {
-                                display(row);
+                                currentRow = row;
+
+                                if (currentView == 0) {
+                                    details();
+                                } else if (currentView == 1) {
+                                    document.getElementById('waitDialog').style.display = "inline-block";
+        
+                                    window.setTimeout(function() {
+                                        currentView = 1;
+                                        plot();
+                                    }, 10);
+                                }
+
                             })
 
                             continuous = [];
@@ -2295,9 +2320,16 @@ function open() {
                                 }
                             }
 
-                            display(rows.length == 0 ? null : 0)
+                            currentRow = rows.length == 0 ? null : 0;
+                            details();
 
-                            process_plot(dataview);
+                            window.setTimeout(function() {
+                                document.getElementById('waitDialog').style.display = "none";    
+                                document.getElementById('table').style.display = "inline-block";
+                                
+                                tableView.setup();
+                                tableView.resize();
+                            }, 10);
 
                         }
 
@@ -2340,12 +2372,15 @@ function open() {
 
     document.getElementById('listview').addEventListener('click', (e) => {
 
- 
+        currentView = 0;
+
         document.getElementById('listview').style.color = "rgba(0,0,0,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
 
         document.getElementById('details').style.display = "inline-block";
         document.getElementById('plots').style.display = "none";
+
+        details();
 
         return false;
 
@@ -2353,11 +2388,18 @@ function open() {
 
     document.getElementById('boxplotview').addEventListener('click', (e) => {
 
-        document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
-        document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
-
         document.getElementById('details').style.display = "none";
         document.getElementById('plots').style.display = "inline-block";
+ 
+        document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
+        
+        document.getElementById('waitDialog').style.display = "inline-block";
+        
+        window.setTimeout(function() {
+            currentView = 1;
+            plot();
+        }, 10);
 
         return false;
 
@@ -2437,10 +2479,11 @@ def html_to_data_uri(html):
     ret = "data:text/html;base64,{data}".format(data=b64)
     return ret
 
-def scatter_plot(data, labels, x_axis, y_axis):
+def scatter_plot(data, labels, x_axis, y_axis, row):
     x = []
     y = []
     s = []
+    c = []
 
     plt.rc('font', size=6)
 
@@ -2450,19 +2493,25 @@ def scatter_plot(data, labels, x_axis, y_axis):
             x.append(float(data[i][x_axis]))
             y.append(float(data[i][y_axis]))
             s.append(4)
+            c.append('powderblue')
             
     fig, ax = plt.subplots()
 
     ax.set_xlabel(labels[x_axis])
     ax.set_ylabel(labels[y_axis])
+
     ax.yaxis.set_label_position("right")
     fig.set_figwidth(3)
     fig.set_figheight(3)  
 
-    ax.scatter(x, y, s=s)
+    ax.scatter(x, y, s=s, c=c)
+    s = []
+    s.append(8)
+    ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='firebrick', s=s)
     
     pic_IObytes = io.BytesIO()
     plt.savefig(pic_IObytes, format='png')
+    
     plt.close()
 
     pic_IObytes.seek(0)
@@ -2477,7 +2526,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': True
+            'enabled': False
         }
     })
     
@@ -2540,7 +2589,8 @@ def show_plot(value, js_callback):
     continuous = []
 
     data = json.loads(value)
-    types = data['types']
+    types = data['types']    
+    row = data['row']
 
     column = 0
 
@@ -2557,7 +2607,7 @@ def show_plot(value, js_callback):
                 plots.append({
                         'x': data['types'][x_axis],
                         'y': data['types'][y_axis],
-                        'plot': scatter_plot(data['data'], data['columns'], x_axis, y_axis)
+                        'plot': scatter_plot(data['data'], data['columns'], x_axis, y_axis, row),
                         })
     
     return js_callback.Call(json.dumps(plots))
