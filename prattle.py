@@ -2493,7 +2493,7 @@ def scatter_plot(data, labels, x_axis, y_axis, row):
             x.append(float(data[i][x_axis]))
             y.append(float(data[i][y_axis]))
             s.append(4)
-            c.append('powderblue')
+            c.append('gainsboro')
             
     fig, ax = plt.subplots()
 
@@ -2507,7 +2507,9 @@ def scatter_plot(data, labels, x_axis, y_axis, row):
     ax.scatter(x, y, s=s, c=c)
     s = []
     s.append(8)
-    ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='firebrick', s=s)
+
+    if len(data[int(row)][x_axis]) > 0 and len(data[int(row)][y_axis]) > 0:
+        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='dimgrey', s=s)
     
     pic_IObytes = io.BytesIO()
     plt.savefig(pic_IObytes, format='png')
