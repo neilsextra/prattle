@@ -2667,7 +2667,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': True
+            'enabled': False
         }
     })
     
