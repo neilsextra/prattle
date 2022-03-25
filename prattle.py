@@ -2151,6 +2151,49 @@ class DataView extends SyncTableModel {
 
 function resize() {}
 
+function hexbin() {
+    function process_hexbin(dataview) {
+        let json = dataview.toJSON();
+
+        json['row'] = currentRow;
+
+        show_hexbin(JSON.stringify(json), hexbin_callback);
+    }
+    
+    function hexbin_callback(value) {
+        let plots = JSON.parse(value);
+
+        var html = `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+                    `<label id="row-hex" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                    `Row: ${parseInt(currentRow) + 1}</label></div>`;
+            
+        html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
+        html +=  `<div style="position:absolute; width:100%; top:50px; bottom:0px;">`;
+
+        html += `<div class="graph-container" style="position:absolute; overflow:auto;">`;
+
+        for (var plot in plots) {
+            html += `<div style="margin-left:20px">`;
+            html += `<img src="data:image/png;base64,${plots[plot]['plot']}"></img>`;
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+
+        document.getElementById('hexbin').innerHTML = html;
+
+        document.getElementById('waitDialog').style.display = "none";
+        document.getElementById('details').style.display = "none";
+        document.getElementById('plots').style.display = "none";
+        document.getElementById('hexbin').style.display = "inline-block";
+ 
+    }
+
+    process_hexbin(dataview);
+
+}
+
 function plot() {
     function process_plot(dataview) {
         let json = dataview.toJSON();
@@ -2185,6 +2228,7 @@ function plot() {
 
         document.getElementById('waitDialog').style.display = "none";
         document.getElementById('details').style.display = "none";
+        document.getElementById('hexbin').style.display = "none";
         document.getElementById('plots').style.display = "inline-block";
  
     }
@@ -2307,6 +2351,15 @@ function open() {
                                         plot();
                                     }, 10);
 
+                                } else if (currentView == 2) {
+ 
+                                    document.getElementById('waitDialog').style.display = "inline-block";
+
+                                    window.setTimeout(function() {
+                                        currentView = 1;
+                                        hexbin();
+                                    }, 10);
+
                                 }
 
                             })
@@ -2379,9 +2432,11 @@ function open() {
 
         document.getElementById('listview').style.color = "rgba(0,0,0,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
-
+        document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
+ 
         document.getElementById('details').style.display = "inline-block";
         document.getElementById('plots').style.display = "none";
+        document.getElementById('plots').style.display = "hexbin";
 
         details();
 
@@ -2395,7 +2450,8 @@ function open() {
 
         document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
-        
+        document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
+      
         var rowId = document.getElementById('row-plot')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
@@ -2408,6 +2464,35 @@ function open() {
         } else {
             document.getElementById('details').style.display = "none";
             document.getElementById('plots').style.display = "inline-block";
+            document.getElementById('hexbin').style.display = "none";
+
+        }
+
+        return false;
+
+    });
+    
+    document.getElementById('hexplotview').addEventListener('click', (e) => {
+
+        currentView = 2;
+
+        document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('hexplotview').style.color = "rgba(0,0,0,1.0)";
+        
+        var rowId = document.getElementById('row-hex')
+        var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
+
+        if (position != currentRow) {
+            document.getElementById('waitDialog').style.display = "inline-block";
+            window.setTimeout(function() {
+                hexbin();
+            }, 10);
+
+        } else {
+            document.getElementById('details').style.display = "none";
+            document.getElementById('plots').style.display = "none";
+            document.getElementById('hexbin').style.display = "inline-block";
         }
 
         return false;
@@ -2462,11 +2547,14 @@ function open() {
                 </div>
                 <div id="plots" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
                 </div>
+                 <div id="hexbin" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
+                </div>
   
                 <div id="selection" style="position: absolute; bottom:20px; height:12px; width:100%; overflow:hide; border-bottom: 1px solid rgba(0,0,0, 0.05); opacity:0.8;">
-                    <div id="views" style="display: block; font-size:32px; width:40px; height:10px; overflow:hide; margin-left:auto; margin-right:auto; margin-top:4px;">
+                    <div id="views" style="display: block; font-size:32px; width:50px; height:10px; overflow:hide; margin-left:auto; margin-right:auto; margin-top:4px;">
                         <a id="listview" class="menu-item" style="color:rgba(0,0,0,1.0)">&#8226;</a>
                         <a id="boxplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
+                        <a id="hexplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
                     </div>
                 </div>
             </div>    
@@ -2530,6 +2618,48 @@ def scatter_plot(data, labels, x_axis, y_axis, row):
 
     return pic_b64.decode('utf-8')
 
+def hexbin_plot(data, labels, x_axis, y_axis, row):
+    x = []
+    y = []
+    s = []
+    c = []
+
+    plt.rc('font', size=6)
+
+    for i in range(len(data)):
+
+        if len(data[i][x_axis]) > 0 and len(data[i][y_axis]) > 0:
+            x.append(float(data[i][x_axis]))
+            y.append(float(data[i][y_axis]))
+           
+    fig, ax = plt.subplots()
+
+    ax.set_xlabel(labels[x_axis])
+    ax.set_ylabel(labels[y_axis])
+
+    ax.yaxis.set_label_position("right")
+    
+    fig.set_figwidth(3)
+    fig.set_figheight(3)  
+
+    ax.hexbin(x, y, gridsize=20)
+
+    s = []
+    s.append(32)
+
+    if len(data[int(row)][x_axis]) > 0 and len(data[int(row)][y_axis]) > 0:
+        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='white', s=s)
+    
+    pic_IObytes = io.BytesIO()
+    plt.savefig(pic_IObytes, format='png')
+    
+    plt.close()
+
+    pic_IObytes.seek(0)
+    pic_b64 = base64.b64encode(pic_IObytes.read())   
+
+    return pic_b64.decode('utf-8')
+
 def main():
 
     WIDTH = 1300    
@@ -2537,7 +2667,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': False
+            'enabled': True
         }
     })
     
@@ -2551,6 +2681,7 @@ def main():
     bindings = cef.JavascriptBindings()
     bindings.SetFunction("process_file", process_file)
     bindings.SetFunction("show_plot", show_plot)
+    bindings.SetFunction("show_hexbin", show_hexbin)
 
     browser.SetJavascriptBindings(bindings)
     cef.MessageLoop()
@@ -2619,6 +2750,34 @@ def show_plot(value, js_callback):
                         'x': data['types'][x_axis],
                         'y': data['types'][y_axis],
                         'plot': scatter_plot(data['data'], data['columns'], x_axis, y_axis, row),
+                        })
+    
+    return js_callback.Call(json.dumps(plots))
+
+def show_hexbin(value, js_callback):  
+    plots = []
+    continuous = []
+
+    data = json.loads(value)
+    types = data['types']    
+    row = data['row']
+
+    column = 0
+
+    for datatype in types:
+        if datatype == 'number':
+            continuous.append(column)
+    
+        column = column + 1
+
+    while len(continuous) > 1:
+        x_axis = continuous.pop(0)
+
+        for y_axis in continuous: 
+                plots.append({
+                        'x': data['types'][x_axis],
+                        'y': data['types'][y_axis],
+                        'plot': hexbin_plot(data['data'], data['columns'], x_axis, y_axis, row),
                         })
     
     return js_callback.Call(json.dumps(plots))
