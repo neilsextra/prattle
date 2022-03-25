@@ -2305,6 +2305,32 @@ function open() {
                         }
 
                         function result_callback(value) {
+                            function show(row) {
+                                currentRow = row;
+
+                                if (currentView == 0) {
+                                    details();
+                                } else if (currentView == 1) {
+ 
+                                    document.getElementById('waitDialog').style.display = "inline-block";
+
+                                    window.setTimeout(function() {
+                                        currentView = 1;
+                                        plot();
+                                    }, 10);
+
+                                } else if (currentView == 2) {
+ 
+                                    document.getElementById('waitDialog').style.display = "inline-block";
+
+                                    window.setTimeout(function() {
+                                        currentView = 1;
+                                        hexbin();
+                                    }, 10);
+
+                                }
+                            }
+
                             let results = JSON.parse(value);
 
                             rows = results.rows;
@@ -2338,30 +2364,7 @@ function open() {
                             });
 
                             tableView.addProcessor(function(row) {
-                                currentRow = row;
-
-                                if (currentView == 0) {
-                                    details();
-                                } else if (currentView == 1) {
- 
-                                    document.getElementById('waitDialog').style.display = "inline-block";
-
-                                    window.setTimeout(function() {
-                                        currentView = 1;
-                                        plot();
-                                    }, 10);
-
-                                } else if (currentView == 2) {
- 
-                                    document.getElementById('waitDialog').style.display = "inline-block";
-
-                                    window.setTimeout(function() {
-                                        currentView = 1;
-                                        hexbin();
-                                    }, 10);
-
-                                }
-
+                                show(row);
                             })
 
                             continuous = [];
@@ -2377,8 +2380,8 @@ function open() {
                             }
 
                             currentRow = rows.length == 0 ? null : 0;
-                            details();
-
+                            show(currentRow);
+   
                             window.setTimeout(function() {
                                 document.getElementById('waitDialog').style.display = "none";    
                                 document.getElementById('table').style.display = "inline-block";
@@ -2606,7 +2609,7 @@ def scatter_plot(data, labels, x_axis, y_axis, row):
     s.append(8)
 
     if len(data[int(row)][x_axis]) > 0 and len(data[int(row)][y_axis]) > 0:
-        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='dimgrey', s=s)
+        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='blue', s=s)
     
     pic_IObytes = io.BytesIO()
     plt.savefig(pic_IObytes, format='png')
@@ -2642,13 +2645,13 @@ def hexbin_plot(data, labels, x_axis, y_axis, row):
     fig.set_figwidth(3)
     fig.set_figheight(3)  
 
-    ax.hexbin(x, y, gridsize=20)
+    ax.hexbin(x, y, gridsize=20, cmap='binary')
 
     s = []
     s.append(32)
 
     if len(data[int(row)][x_axis]) > 0 and len(data[int(row)][y_axis]) > 0:
-        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='white', s=s)
+        ax.scatter(float(data[int(row)][x_axis]), float(data[int(row)][y_axis]), color='blue', s=s)
     
     pic_IObytes = io.BytesIO()
     plt.savefig(pic_IObytes, format='png')
@@ -2667,7 +2670,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': False
+            'enabled': True
         }
     })
     
