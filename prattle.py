@@ -2151,8 +2151,7 @@ class DataView extends SyncTableModel {
 
 function resize() {}
 
-function plot()
-{
+function plot() {
     function process_plot(dataview) {
         let json = dataview.toJSON();
 
@@ -2165,7 +2164,7 @@ function plot()
         let plots = JSON.parse(value);
 
         var html = `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
-                    `<label style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                    `<label id="row-plot" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
                     `Row: ${parseInt(currentRow) + 1}</label></div>`;
             
         html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
@@ -2185,7 +2184,9 @@ function plot()
         document.getElementById('plots').innerHTML = html;
 
         document.getElementById('waitDialog').style.display = "none";
-
+        document.getElementById('details').style.display = "none";
+        document.getElementById('plots').style.display = "inline-block";
+ 
     }
 
     process_plot(dataview);
@@ -2201,7 +2202,7 @@ function details() {
             html += `<table style="margin:0px;">`;
 
             for (var variable in variables) {
-                html += `<tr><td><label` +
+                html += `<tr><td><label ` +
                         `style="width:100px; text-overflow: ellipsis; color:navy; white-space:nowrap; overflow:hidden; display:inline-block;">` +
                         `${columns[variables[variable]]}</label></td><td>${row == null ? '-' : row[variables[variable]]}</td></tr>`;
             }
@@ -2220,7 +2221,7 @@ function details() {
     let html = "";
 
     html += `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
-    `<label id="row" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+    `<label id="row-details" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
     `Row: ${position}</label></div>`;
 
     html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
@@ -2298,12 +2299,14 @@ function open() {
                                 if (currentView == 0) {
                                     details();
                                 } else if (currentView == 1) {
+ 
                                     document.getElementById('waitDialog').style.display = "inline-block";
-        
+
                                     window.setTimeout(function() {
                                         currentView = 1;
                                         plot();
                                     }, 10);
+
                                 }
 
                             })
@@ -2388,18 +2391,24 @@ function open() {
 
     document.getElementById('boxplotview').addEventListener('click', (e) => {
 
-        document.getElementById('details').style.display = "none";
-        document.getElementById('plots').style.display = "inline-block";
- 
+        currentView = 1;
+
         document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
         
-        document.getElementById('waitDialog').style.display = "inline-block";
-        
-        window.setTimeout(function() {
-            currentView = 1;
-            plot();
-        }, 10);
+        var rowId = document.getElementById('row-plot')
+        var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
+
+        if (position != currentRow) {
+            document.getElementById('waitDialog').style.display = "inline-block";
+            window.setTimeout(function() {
+                plot();
+            }, 10);
+
+        } else {
+            document.getElementById('details').style.display = "none";
+            document.getElementById('plots').style.display = "inline-block";
+        }
 
         return false;
 
