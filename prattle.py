@@ -2585,6 +2585,8 @@ def scatter_plot(data, labels, x_axis, y_axis, row):
     s = []
     c = []
 
+    matplotlib.use('Agg')
+    
     plt.rc('font', size=6)
 
     for i in range(len(data)):
@@ -2627,6 +2629,7 @@ def hexbin_plot(data, labels, x_axis, y_axis, row):
     s = []
     c = []
 
+    matplotlib.use('Agg')
     plt.rc('font', size=6)
 
     for i in range(len(data)):
