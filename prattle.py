@@ -2439,7 +2439,7 @@ function open() {
  
         document.getElementById('details').style.display = "inline-block";
         document.getElementById('plots').style.display = "none";
-        document.getElementById('plots').style.display = "hexbin";
+        document.getElementById('hexbin').style.display = "none";
 
         details();
 
@@ -2468,7 +2468,6 @@ function open() {
             document.getElementById('details').style.display = "none";
             document.getElementById('plots').style.display = "inline-block";
             document.getElementById('hexbin').style.display = "none";
-
         }
 
         return false;
