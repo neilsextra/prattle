@@ -2779,7 +2779,7 @@ def boxplot_plot(data, labels, column, row):
 
     ax.boxplot(x)
     ax.set(xticklabels=[])
-    
+
     s = []
     s.append(32)
 
@@ -2803,7 +2803,7 @@ def main():
 
     cef.Initialize({
         'context_menu' : {
-            'enabled': True
+            'enabled': False
         }
     })
     
