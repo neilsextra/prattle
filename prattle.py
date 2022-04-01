@@ -1552,7 +1552,6 @@ FileUtil.prototype.load = function (callback) {
                             __self.cells[`${coordinates[1]},${iColumn}`].style.backgroundColor = "rgba(0,0,0,0.1)";
                         }
 
-
                     }
 
                     element.onmouseout = function(e) {
@@ -2188,6 +2187,7 @@ function hexbin() {
         document.getElementById('plots').style.display = "none";
         document.getElementById('hexbin').style.display = "inline-block";
         document.getElementById('boxplot').style.display = "none";
+        document.getElementById('hist').style.display = "none";
  
     }
 
@@ -2232,10 +2232,56 @@ function boxplot() {
         document.getElementById('plots').style.display = "none";
         document.getElementById('hexbin').style.display = "none";
         document.getElementById('boxplot').style.display = "inline-block";
+        document.getElementById('hist').style.display = "none";
  
     }
 
     process_boxplot(dataview);
+
+}
+
+function hist() {
+    function process_hist(dataview) {
+        let json = dataview.toJSON();
+
+        json['row'] = currentRow;
+
+        show_hist(JSON.stringify(json), hist_callback);
+    }
+    
+    function hist_callback(value) {
+        let plots = JSON.parse(value);
+
+        var html = `<div style="margin: 0 auto; margin-top: 6px; text-align:left; overflow:hidden;">` +
+                    `<label id="row-hist" style="color:navy; font-size:12px; height:16px; width:30px; line-height:36px; margin-left:5px; ">` +
+                    `Row: ${parseInt(currentRow) + 1}</label></div>`;
+            
+        html += `<div style="position:absolute; margin-top:5px; left:0px; right:0px; height:1px; background-color:rgba(0,0,0,0.2); overflow:hidden;"></div>`;
+        html +=  `<div style="position:absolute; width:100%; top:50px; bottom:0px;">`;
+
+        html += `<div class="graph-container" style="position:absolute; overflow:auto;">`;
+
+        for (var plot in plots) {
+            html += `<div style="margin-left:20px">`;
+            html += `<img src="data:image/png;base64,${plots[plot]['plot']}"></img>`;
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        html += `</div>`;
+
+        document.getElementById('hist').innerHTML = html;
+
+        document.getElementById('waitDialog').style.display = "none";
+        document.getElementById('details').style.display = "none";
+        document.getElementById('plots').style.display = "none";
+        document.getElementById('hexbin').style.display = "none";
+        document.getElementById('boxplot').style.display = "none";
+        document.getElementById('hist').style.display = "inline-block";
+ 
+    }
+
+    process_hist(dataview);
 
 }
 
@@ -2276,6 +2322,7 @@ function plot() {
         document.getElementById('hexbin').style.display = "none";
         document.getElementById('plots').style.display = "inline-block";
         document.getElementById('boxplot').style.display = "none";
+        document.getElementById('hist').style.display = "none";
  
     }
 
@@ -2378,6 +2425,14 @@ function open() {
 
                                     window.setTimeout(function() {
                                         boxplot();
+                                    }, 10);
+
+                                } else if (currentView == 4) {
+ 
+                                    document.getElementById('waitDialog').style.display = "inline-block";
+
+                                    window.setTimeout(function() {
+                                        hist();
                                     }, 10);
 
                                 }
@@ -2490,12 +2545,14 @@ function open() {
         document.getElementById('scatterplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('histplotview').style.color = "rgba(110,110,110,1.0)";
   
         document.getElementById('details').style.display = "inline-block";
         document.getElementById('plots').style.display = "none";
         document.getElementById('hexbin').style.display = "none";
         document.getElementById('boxplot').style.display = "none";
-
+        document.getElementById('hist').style.display = "none";
+  
         details();
 
         return false;
@@ -2510,7 +2567,8 @@ function open() {
         document.getElementById('scatterplotview').style.color = "rgba(0,0,0,1.0)";
         document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
-     
+        document.getElementById('histplotview').style.color = "rgba(110,110,110,1.0)";
+       
         var rowId = document.getElementById('row-plot')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
@@ -2525,6 +2583,7 @@ function open() {
             document.getElementById('plots').style.display = "inline-block";
             document.getElementById('hexbin').style.display = "none";
             document.getElementById('boxplot').style.display = "none";
+            document.getElementById('hist').style.display = "none";
         }
 
         return false;
@@ -2539,6 +2598,7 @@ function open() {
         document.getElementById('scatterplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('hexplotview').style.color = "rgba(0,0,0,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('histplotview').style.color = "rgba(110,110,110,1.0)";
        
         var rowId = document.getElementById('row-hex')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
@@ -2554,6 +2614,7 @@ function open() {
             document.getElementById('plots').style.display = "none";
             document.getElementById('hexbin').style.display = "inline-block";
             document.getElementById('boxplot').style.display = "none";
+            document.getElementById('hist').style.display = "none";
         }
 
         return false;
@@ -2568,7 +2629,8 @@ function open() {
         document.getElementById('scatterplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
         document.getElementById('boxplotview').style.color = "rgba(0,0,0,1.0)";
-        
+        document.getElementById('histplotview').style.color = "rgba(110,110,110,1.0)";
+          
         var rowId = document.getElementById('row-box')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
@@ -2583,6 +2645,38 @@ function open() {
             document.getElementById('plots').style.display = "none";
             document.getElementById('hexbin').style.display = "none";
             document.getElementById('boxplot').style.display = "inline-block";
+            document.getElementById('hist').style.display = "none";
+        }
+
+        return false;
+
+    });
+
+    document.getElementById('histplotview').addEventListener('click', (e) => {
+
+        currentView = 4;
+
+        document.getElementById('listview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('scatterplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('hexplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('boxplotview').style.color = "rgba(110,110,110,1.0)";
+        document.getElementById('histplotview').style.color = "rgba(0,0,0,1.0)";
+          
+        var rowId = document.getElementById('row-hist')
+        var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
+
+        if (position != currentRow) {
+            document.getElementById('waitDialog').style.display = "inline-block";
+            window.setTimeout(function() {
+                hist();
+            }, 10);
+
+        } else {
+            document.getElementById('details').style.display = "none";
+            document.getElementById('plots').style.display = "none";
+            document.getElementById('hexbin').style.display = "none";
+            document.getElementById('boxplot').style.display = "none";
+            document.getElementById('hist').style.display = "inline-block";
         }
 
         return false;
@@ -2641,13 +2735,16 @@ function open() {
                 </div>
                 <div id="boxplot" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
                 </div>
+                <div id="hist" class="details" style="display:none; position:absolute; top:0px; left:0px; right:0px; bottom: 30px; overflow:hidden;">
+                </div>
   
                 <div id="selection" style="position: absolute; bottom:20px; height:12px; width:100%; overflow:hide; border-bottom: 1px solid rgba(0,0,0, 0.05); opacity:0.8;">
-                    <div id="views" style="display: block; font-size:32px; width:70px; height:10px; overflow:hide; margin-left:auto; margin-right:auto; margin-top:4px;">
+                    <div id="views" style="display: block; font-size:32px; width:90px; height:10px; overflow:hide; margin-left:auto; margin-right:auto; margin-top:4px;">
                         <a id="listview" class="menu-item" style="color:rgba(0,0,0,1.0)">&#8226;</a>
                         <a id="scatterplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
                         <a id="hexplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
                         <a id="boxplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
+                        <a id="histplotview" class="menu-item" style="color:rgba(110,110,110,1.0)">&#8226;</a>
                     </div>
                 </div>
             </div>    
@@ -2796,6 +2893,51 @@ def boxplot_plot(data, labels, column, row):
 
     return pic_b64.decode('utf-8')
 
+def hist_plot(data, labels, column, row):
+    x = []
+    s = []
+    c = []
+
+    matplotlib.use('Agg')
+    plt.rc('font', size=6)
+
+    for i in range(len(data)):
+        if len(data[i][column]) > 0:
+            x.append(float(data[i][column]))
+           
+    fig, ax = plt.subplots()
+
+    ax.set_ylabel(labels[column])
+
+    ax.yaxis.set_label_position("right")
+    
+    fig.set_figwidth(3)
+    fig.set_figheight(3)  
+
+    n, bins, patches = ax.hist(x, bins=8, color='gainsboro', ec="black")
+
+    bin = 0
+
+    while bin < len(bins) - 1:
+
+        if bins[bin] > float(data[int(row)][column]):
+            break
+
+        bin = bin + 1
+
+    patches[bin].set_color('grey')
+    patches[bin].set_ec('black')
+
+    pic_IObytes = io.BytesIO()
+    plt.savefig(pic_IObytes, format='png')
+    
+    plt.close()
+
+    pic_IObytes.seek(0)
+    pic_b64 = base64.b64encode(pic_IObytes.read())   
+
+    return pic_b64.decode('utf-8')
+
 def main():
 
     WIDTH = 1300    
@@ -2819,6 +2961,7 @@ def main():
     bindings.SetFunction("show_plot", show_plot)
     bindings.SetFunction("show_hexbin", show_hexbin)
     bindings.SetFunction("show_boxplot", show_boxplot)
+    bindings.SetFunction("show_hist", show_hist)
 
     browser.SetJavascriptBindings(bindings)
     cef.MessageLoop()
@@ -2944,6 +3087,32 @@ def show_boxplot(value, js_callback):
                 'plot': boxplot_plot(data['data'], data['columns'], x_axis, row),
                 })
     
+    return js_callback.Call(json.dumps(plots))
+
+def show_hist(value, js_callback):  
+    plots = []
+    continuous = []
+
+    data = json.loads(value)
+    types = data['types']    
+    row = data['row']
+
+    column = 0
+
+    for datatype in types:
+        if datatype == 'number':
+            continuous.append(column)
+    
+        column = column + 1
+
+    while len(continuous) > 1:
+        x_axis = continuous.pop(0)
+
+        plots.append({
+                'x': data['types'][x_axis],
+                'plot': hist_plot(data['data'], data['columns'], x_axis, row),
+                })
+
     return js_callback.Call(json.dumps(plots))
 
 if __name__ == '__main__':
