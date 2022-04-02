@@ -2925,6 +2925,8 @@ def hist_plot(data, labels, column, row):
 
         bin = bin + 1
 
+    bin = bin - 1
+
     patches[bin].set_color('grey')
     patches[bin].set_ec('black')
 
