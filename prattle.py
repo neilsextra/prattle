@@ -2553,7 +2553,9 @@ function open() {
         document.getElementById('boxplot').style.display = "none";
         document.getElementById('hist').style.display = "none";
   
-        details();
+        if (tableView != null) {
+            details();
+        }
 
         return false;
 
@@ -2572,7 +2574,7 @@ function open() {
         var rowId = document.getElementById('row-plot')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
-        if (position != currentRow) {
+        if (tableView != null && position != currentRow) {
             document.getElementById('waitDialog').style.display = "inline-block";
             window.setTimeout(function() {
                 plot();
@@ -2603,7 +2605,7 @@ function open() {
         var rowId = document.getElementById('row-hex')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
-        if (position != currentRow) {
+        if (tableView != null && position != currentRow) {
             document.getElementById('waitDialog').style.display = "inline-block";
             window.setTimeout(function() {
                 hexbin();
@@ -2634,7 +2636,7 @@ function open() {
         var rowId = document.getElementById('row-box')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
-        if (position != currentRow) {
+        if (tableView != null && position != currentRow) {
             document.getElementById('waitDialog').style.display = "inline-block";
             window.setTimeout(function() {
                 boxplot();
@@ -2665,7 +2667,7 @@ function open() {
         var rowId = document.getElementById('row-hist')
         var position = rowId == null ? - 1  : parseInt(rowId.innerHTML.replace("Row: ",""))  - 1;
 
-        if (position != currentRow) {
+        if (tableView != null && position != currentRow) {
             document.getElementById('waitDialog').style.display = "inline-block";
             window.setTimeout(function() {
                 hist();
